@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         PATH = "/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
-        FUNCTION_NAME = 'hello-world-jenkins-demo'
+        FUNCTION_NAME = 'hello-world-jenkins'
         AWS_REGION = 'us-east-1'
     }
 
