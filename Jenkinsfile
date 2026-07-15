@@ -1,9 +1,16 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['dev', 'staging', 'prod'],
+            description: 'Which environment to deploy to'
+        )
+    }
+
     environment {
         PATH = "/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
-        FUNCTION_NAME = 'hello-world-jenkins'
         AWS_REGION = 'us-east-1'
     }
 
@@ -18,6 +25,19 @@ pipeline {
         stage('Package') {
             steps {
                 sh 'zip function.zip lambda_function.py'
+            }
+        }
+
+        stage('Determine Function Name') {
+            steps {
+                script {
+                    if (params.ENVIRONMENT == 'prod') {
+                        env.FUNCTION_NAME = 'hello-world-jenkins'
+                    } else {
+                        env.FUNCTION_NAME = "hello-world-jenkins-${params.ENVIRONMENT}"
+                    }
+                    echo "Deploying to function: ${env.FUNCTION_NAME}"
+                }
             }
         }
 
@@ -40,7 +60,7 @@ pipeline {
 
     post {
         success {
-            echo 'Lambda function updated successfully via Jenkins.'
+            echo "Lambda function ${env.FUNCTION_NAME} updated successfully via Jenkins."
         }
         failure {
             echo 'Pipeline failed — check console output above.'
