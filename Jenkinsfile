@@ -28,6 +28,19 @@ pipeline {
             }
         }
 
+        stage('Test') {
+            steps {
+                script {
+                    def fileContent = readFile('lambda_function.py')
+                    if (!fileContent.contains('def lambda_handler')) {
+                        error("Test failed: lambda_function.py does not contain a 'lambda_handler' function.")
+                    } else {
+                        echo "Test passed: lambda_handler function found."
+                    }
+                }
+            }
+        }
+
         stage('Determine Function Name') {
             steps {
                 script {
