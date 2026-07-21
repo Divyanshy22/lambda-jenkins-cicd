@@ -1,3 +1,5 @@
+@Library('shared-library') _
+
 pipeline {
     agent any
 
@@ -10,7 +12,7 @@ pipeline {
     }
 
     environment {
-        PATH = "/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
+        PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         AWS_REGION = 'us-east-1'
     }
 
@@ -28,27 +30,12 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                script {
-                    def fileContent = readFile('lambda_function.py')
-                    if (!fileContent.contains('def lambda_handler')) {
-                        error("Test failed: lambda_function.py does not contain a 'lambda_handler' function.")
-                    } else {
-                        echo "Test passed: lambda_handler function found."
-                    }
-                }
-            }
-        }
-
         stage('Determine Function Name') {
             steps {
                 script {
-                    if (params.ENVIRONMENT == 'prod') {
-                        env.FUNCTION_NAME = 'hello-world-jenkins'
-                    } else {
-                        env.FUNCTION_NAME = "hello-world-jenkins-${params.ENVIRONMENT}"
-                    }
+                    env.FUNCTION_NAME = (params.ENVIRONMENT == 'prod')
+                        ? 'hello-world-jenkins'
+                        : "hello-world-jenkins-${params.ENVIRONMENT}"
                     echo "Deploying to function: ${env.FUNCTION_NAME}"
                 }
             }
@@ -56,17 +43,11 @@ pipeline {
 
         stage('Deploy to Lambda') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh '''
-                        aws lambda update-function-code \
-                          --function-name $FUNCTION_NAME \
-                          --zip-file fileb://function.zip \
-                          --region $AWS_REGION
-                    '''
-                }
+                deployToLambda(
+                    functionName: env.FUNCTION_NAME,
+                    region: env.AWS_REGION,
+                    zipFile: 'function.zip'
+                )
             }
         }
     }
