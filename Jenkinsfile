@@ -40,7 +40,20 @@ pipeline {
                 }
             }
         }
-
+        stage('Approval Gate') {
+    when {
+        expression { params.ENVIRONMENT == 'prod' }
+    }
+    steps {
+        script {
+            def userInput = input(
+                message: "Deploy to PRODUCTION (${env.FUNCTION_NAME})? This will affect the live function.",
+                ok: 'Proceed with deployment',
+                submitter: 'divyanshyadav'
+            )
+        }
+    }
+}
         stage('Deploy to Lambda') {
             steps {
                 deployToLambda(
